@@ -1,8 +1,5 @@
-import os, sys
-
 import numpy as np
 import pandas as pd
-import IPython
 
 def load_data(data):
     """

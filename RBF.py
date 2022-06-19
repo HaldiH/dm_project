@@ -6,9 +6,9 @@ import numpy as np
 
 
 class RBF(object):
-    def __init__(self, n_clusters=8):
+    def __init__(self, n_clusters=8, sigma=1.0):
         self.n_clusters = n_clusters
-        self.sigmas = np.ones((self.n_clusters,))
+        self.sigmas = sigma * np.ones((n_clusters,))
         self.kmeans: Optional[KMeans] = None
         self.lr: Optional[LinearRegression] = None
 
