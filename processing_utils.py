@@ -92,10 +92,12 @@ def return_required_data(dataset: pd.DataFrame, targets: list[str], normalize=Tr
     for target in targets:
         target_indices.append(dataset.columns.get_loc(target))
 
-    X_train, X_test = load_data(np.asanyarray(dataset))
-    
+    X_train, X_rest = load_data(np.asanyarray(dataset)) # splits 50/50
+    X_val, X_test = load_data(np.asanyarray(X_rest), train_perc=0.8, test_perc=0.2) # e.g. 25% val, 25% test
+
     y_test = np.ndarray(shape=(X_test.shape[0], len(targets)))
     y_train = np.ndarray(shape=(X_train.shape[0], len(targets)))
+    y_val = np.ndarray(shape=(X_val.shape[0], len(targets)))
 
     target_indices.sort(reverse=True)
     # remove target columns from X and add them to y
@@ -106,14 +108,21 @@ def return_required_data(dataset: pd.DataFrame, targets: list[str], normalize=Tr
 
         y_test[:, i] = X_test[:, index]
         X_test = np.delete(X_test, index, 1)
+
+        y_val[:, i] = X_val[:, index]
+        X_val = np.delete(X_val, index, 1)
     
     if normalize:
         X_train = normalize_ndarray(X_train)
         y_train = normalize_ndarray(y_train)
+        
+        X_val = normalize_ndarray(X_val)
+        y_val = normalize_ndarray(y_val)
+        
         X_test = normalize_ndarray(X_test)
         y_test = normalize_ndarray(y_test)
 
-    return X_train, y_train, X_test, y_test
+    return X_train, y_train, X_val, y_val, X_test, y_test
 
 def cross_validation_of(Algorithm, X: np.ndarray, y: np.ndarray, V: int = 10) -> float:
     """

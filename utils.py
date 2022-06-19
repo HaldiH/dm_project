@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-def load_data(data):
+def load_data(data, train_perc: float = 0.7, test_perc: float = 0.3):
     """
     Splits the dataset to train and test
     inputs:
@@ -14,7 +14,6 @@ def load_data(data):
         - y_train: training properties
         - y_test: test properties
     """
-    
     idx = np.random.RandomState(seed=4738).permutation(len(data))   # random permutation of line indices
 
     _data = data[idx]       # _data is permutation of data, columns are not permutated. 
