@@ -9,7 +9,6 @@ import numpy as np
 from processing_utils import prune_dataset_lines, encode_smiles_column_of, return_required_data
 from RBF import RBF
 
-
 def objective(trial: Trial, data: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]):
     X_train, y_train, X_validation, y_validation = data
     n_clusters = trial.suggest_int("n_clusters", 1, 400)
@@ -18,7 +17,6 @@ def objective(trial: Trial, data: Tuple[np.ndarray, np.ndarray, np.ndarray, np.n
     y_pred = rbf.predict(X_validation)
     mse = ((y_validation - y_pred)**2).mean()
     return mse
-
 
 if __name__ == "__main__":
     raw_dataset = pd.read_csv('./dataset/data.csv')
@@ -49,7 +47,7 @@ if __name__ == "__main__":
     study = optuna.create_study(
         direction="minimize", study_name="RBF hyperparameters optimization")
     study.optimize(lambda trial: objective(
-        trial, (X_train, y_train, X_val, y_val)), n_trials=500)
+        trial, (X_train, y_train, X_val, y_val)), n_trials=20)
     print(study.best_trial)
 
     n_clusters = study.best_params["n_clusters"]

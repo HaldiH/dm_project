@@ -18,6 +18,9 @@ def prune_dataset_lines(
     """
     Remove lines from dataset if they contain nan values or are missing values.
     This function does not modify it's parameters.
+    Lines with duplicate smiles will be dropped in favor of the one with lowest ```Energy_```, unless another
+    column is provided.
+    Lines with ```nan```/missing values are dropped. 
 
     Parameters
     -----------
@@ -25,7 +28,7 @@ def prune_dataset_lines(
     - remove_nan
     - remove_cols if specified, all columns with nan or empty values will be dropped.
     - remove_duplicates
-    - in_favour_of_col
+    - in_favour_of_col the column on the which duplicate removal is done. 
     
     Returns
     -----------
