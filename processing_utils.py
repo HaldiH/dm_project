@@ -2,6 +2,7 @@ from utils import load_data
 import numpy as np
 import pandas as pd
 import IPython
+from typing import List
 from sklearn.metrics import mean_squared_error
 
 def ldf_display(df, nlines=500):
@@ -78,51 +79,64 @@ def encode_smiles_column_of(dataset: pd.DataFrame, strategy: str = 'one_hot_enco
 
     return encoded_dataset
 
-def normalize_ndarray(X: np.ndarray):
+
+def normalize_ndarray(X: np.ndarray, continuous_columns: List[int]):
     """Normalize every column of X by substracting mean and dividing by std"""
-    for j in range(X.shape[1]):
-        if np.std(X[:, j]) != 0: 
-            X[:, j] = (X[:, j]-np.mean(X[:, j]))/np.std(X[:, j])
+    X = np.copy(X)
+    for j in continuous_columns:
+        column = X[:, j]
+        std = column.std()
+        if std != 0:
+            X[:, j] = (column - column.mean()) / std
         else:
             X[:, j] = 0
     return X
 
-def return_required_data(dataset: pd.DataFrame, targets: list[str], normalize=True): 
-    target_indices = []
-    for target in targets:
-        target_indices.append(dataset.columns.get_loc(target))
 
-    X_train, X_rest = load_data(np.asanyarray(dataset)) # splits 50/50
-    X_val, X_test = load_data(np.asanyarray(X_rest), train_perc=0.8, test_perc=0.2) # e.g. 25% val, 25% test
+def return_required_data(
+        dataset: pd.DataFrame,
+        targets: list[str],
+        continuous_columns: list[str] = None,
+        normalize=True,
+        normalize_targets=True,
+        validation=True,
+        seed=4738
+):
+    n_rows = dataset.shape[0]
 
-    y_test = np.ndarray(shape=(X_test.shape[0], len(targets)))
-    y_train = np.ndarray(shape=(X_train.shape[0], len(targets)))
-    y_val = np.ndarray(shape=(X_val.shape[0], len(targets)))
+    # `sample` return a randomized copy of the DataFrame
+    dataset = dataset.sample(random_state=np.random.RandomState(seed), frac=1)
 
-    target_indices.sort(reverse=True)
-    # remove target columns from X and add them to y
-    # with train and test data
-    for i, index in enumerate(target_indices):                
-        y_train[:, i] = X_train[:, index]
-        X_train = np.delete(X_train, index, 1)
+    if normalize and continuous_columns is not None:
+        mean = np.mean(dataset[continuous_columns], axis=0)
+        std = np.mean(dataset[continuous_columns], axis=0)
+        dataset[continuous_columns] = (
+            dataset[continuous_columns] - mean) / std
 
-        y_test[:, i] = X_test[:, index]
-        X_test = np.delete(X_test, index, 1)
+    if normalize_targets:
+        mean = np.mean(dataset[targets], axis=0)
+        std = np.std(dataset[targets], axis=0)
 
-        y_val[:, i] = X_val[:, index]
-        X_val = np.delete(X_val, index, 1)
-    
-    if normalize:
-        X_train = normalize_ndarray(X_train)
-        y_train = normalize_ndarray(y_train)
-        
-        X_val = normalize_ndarray(X_val)
-        y_val = normalize_ndarray(y_val)
-        
-        X_test = normalize_ndarray(X_test)
-        y_test = normalize_ndarray(y_test)
+        dataset[targets] = (dataset[targets] - mean) / std
 
-    return X_train, y_train, X_val, y_val, X_test, y_test
+    # train 50%, validation 25%, test 25%
+    train_data, val_data, test_data = np.array_split(
+        dataset, [int(1/2 * n_rows), int(3/4 * n_rows)])
+
+    def split_feats_targs(df):
+        feats_df = df.drop(columns=targets, inplace=False)
+        targs_df = df.loc[:, targets]
+        return feats_df, targs_df
+
+    X_train, y_train = split_feats_targs(train_data)
+    X_val, y_val = split_feats_targs(val_data)
+    X_test, y_test = split_feats_targs(test_data)
+
+    if validation:
+        return np.asarray(X_train), np.asarray(y_train), np.asarray(X_val), np.asarray(y_val), np.asarray(X_test), np.asarray(y_test)
+    else:
+        return np.vstack([X_train, X_val]), np.vstack([y_train, y_val]), np.asarray(X_test), np.asarray(y_test)
+
 
 def cross_validation_of(Algorithm, X: np.ndarray, y: np.ndarray, V: int = 10) -> float:
     """

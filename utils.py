@@ -67,3 +67,6 @@ def smile_to_hot(smile, largest_smile_len, alphabet):
         onehot_encoded.append(letter)
     return integer_encoded, np.array(onehot_encoded)
 
+
+def split_array(arr, frac: float):
+    return np.array_split(arr, [np.floor(frac * arr.shape[0]).astype(int)], axis=0)
