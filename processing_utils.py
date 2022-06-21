@@ -147,6 +147,7 @@ def get_train_data(
 ):
     features_df = dataset.drop(columns=targets_columns, inplace=False)
     targets_df = dataset[targets_columns]
+
     if random_state is None:
         random_state = np.random.RandomState()
 
@@ -177,14 +178,14 @@ def get_train_data(
             return X_train, y_train, X_val, y_val, X_test, y_test
     else:
         frac = .75
-        X_train: pd.DataFrame = features_df.sample(
-            frac=frac, random_state=random_state, replace=False)
-        y_train: pd.DataFrame = targets_df.sample(frac=frac, random_state=random_state)
+        
+        rows = np.random.binomial(1, frac, size=features_df.shape[0]).astype(bool)
+        X_train = features_df[rows]
+        y_train = targets_df[rows]
 
-        frac = .25
-        X_test: pd.DataFrame = features_df.sample(
-            frac=frac, random_state=random_state, replace=False)
-        y_test: pd.DataFrame = targets_df.sample(frac=frac, random_state=random_state)
+        X_test = features_df[~rows]
+        y_test = targets_df[~rows]
+        
         if as_numpy:
             return tuple_to_numpy((X_train, y_train, X_test, y_test))
         else:
