@@ -145,6 +145,7 @@ def get_train_data(
         validation=True,
         as_numpy=True,
 ):
+    """This function returns pandas DataFrames"""
     features_df = dataset.drop(columns=targets_columns, inplace=False)
     targets_df = dataset[targets_columns]
 
