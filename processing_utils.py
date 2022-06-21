@@ -194,6 +194,10 @@ def get_train_data(
 
 
 def scale_data(X_train: pd.DataFrame, y_train: pd.DataFrame, X_test: pd.DataFrame, y_test: pd.DataFrame, X_val: pd.DataFrame=None, y_val: pd.DataFrame=None):
+    """
+    Scales training data by substracting mean and dividing by standard deviation.
+    Centers the test data using the mean and standard deviation of the training data.
+    """
     if X_val is not None and y_val is not None:
         val_f_scaler = StandardScaler()
         val_t_scaler = StandardScaler()
