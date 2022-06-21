@@ -15,7 +15,7 @@ def load_data(data, train_perc: float = 0.7, test_perc: float = 0.3):
         - y_test: test properties
     """
     idx = np.random.RandomState(seed=4738).permutation(len(data))   # random permutation of line indices
-
+    
     _data = data[idx]       # _data is permutation of data, columns are not permutated. 
 
     train_test_size = [0.7, 0.3]
