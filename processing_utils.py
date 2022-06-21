@@ -15,7 +15,7 @@ def ldf_display(df, nlines=500):
 
 def prune_dataset_lines(
     dataset: pd.DataFrame, remove_nan_lines: bool = True, remove_nan_cols: bool = False, 
-    remove_duplicates_: bool = True, in_favour_of_col: str = 'Energy_(kcal/mol)') -> pd.DataFrame:
+    remove_duplicates: bool = True, in_favour_of_col: str = 'Energy_(kcal/mol)') -> pd.DataFrame:
     """
     Remove lines from dataset if they contain nan values or are missing values.
     This function does not modify it's parameters.
@@ -44,13 +44,13 @@ def prune_dataset_lines(
     if remove_nan_lines:  
         pruned_dataset.dropna(axis=0, how='any', inplace=True)
 
-    if remove_duplicates_:
+    if remove_duplicates:
         pruned_dataset.sort_values(axis=0, by=['Chiral_Molecular_SMILES', in_favour_of_col], ascending=True, inplace=True)
         pruned_dataset.drop_duplicates(subset='Chiral_Molecular_SMILES', keep='first', inplace=True)
     
     return pruned_dataset
 
-def encode_smiles_column_of(dataset: pd.DataFrame, strategy: str = 'one_hot_encoding'):
+def encode_smiles_column_of(dataset: pd.DataFrame, strategy: str = 'one_hot_encoding', column='Chiral_Molecular_SMILES'):
     """
     Encode smiles string column to numerical representation. 
     This function does not modify it's arguments.
@@ -65,18 +65,17 @@ def encode_smiles_column_of(dataset: pd.DataFrame, strategy: str = 'one_hot_enco
     The encoded dataset by copy.
     """
     encoded_dataset = dataset.copy()
-    smiles = encoded_dataset['Chiral_Molecular_SMILES']
+    smiles = encoded_dataset[column]
+    encoded_dataset.drop(columns=column, inplace=True)
 
     if strategy == 'one_hot_encoding':
-        encoded_dataset = pd.get_dummies(dataset, columns=['Chiral_Molecular_SMILES'])
+        encoded_dataset = pd.get_dummies(dataset, columns=column)
 
     if strategy == 'count_encoding':
-        smiles_alphabet = list(set(''.join(np.asanyarray(smiles))))
-        for letter in smiles_alphabet:
-            encoded_dataset[letter] = encoded_dataset.apply(lambda row: row['Chiral_Molecular_SMILES'].count(letter), axis=1)
+        smiles_alphabet = np.unique(list(''.join(np.asanyarray(smiles))))
+        for letter in str(smiles_alphabet):
+            encoded_dataset[letter] = smiles.apply(lambda x: x.count(letter))
         
-        del encoded_dataset['Chiral_Molecular_SMILES']
-
     return encoded_dataset
 
 
@@ -136,6 +135,59 @@ def return_required_data(
         return np.asarray(X_train), np.asarray(y_train), np.asarray(X_val), np.asarray(y_val), np.asarray(X_test), np.asarray(y_test)
     else:
         return np.vstack([X_train, X_val]), np.vstack([y_train, y_val]), np.asarray(X_test), np.asarray(y_test)
+
+
+def get_train_data(
+        dataset: pd.DataFrame,
+        targets_columns: list[str],
+        random_state: np.random.RandomState = None,
+        validation=True,
+        as_numpy=True
+):
+    features_df = dataset.drop(columns=targets_columns, inplace=False)
+    targets_df = dataset[targets_columns]
+    if random_state is None:
+        random_state = np.random.RandomState()
+
+    def tuple_to_numpy(t: tuple):
+        res = ()
+        for e in t:
+            res += (np.asarray(e),)
+        return res
+
+    if validation:
+        frac = .5
+        X_train: pd.DataFrame = features_df.sample(
+            frac=frac, random_state=random_state, replace=False)
+        y_train: pd.DataFrame = targets_df.sample(frac=frac, random_state=random_state)
+
+        frac=.25
+        X_val: pd.DataFrame = features_df.sample(
+            frac=frac, random_state=random_state, replace=False)
+        y_val: pd.DataFrame = targets_df.sample(frac=frac, random_state=random_state)
+
+        frac=.25
+        X_test: pd.DataFrame = features_df.sample(
+            frac=frac, random_state=random_state, replace=False)
+        y_test: pd.DataFrame = targets_df.sample(frac=frac, random_state=random_state)
+        if as_numpy:
+            return tuple_to_numpy((X_train, y_train, X_val, y_val, X_test, y_test))
+        else:
+            return X_train, y_train, X_val, y_val, X_test, y_test
+    else:
+        frac = .75
+        X_train: pd.DataFrame = features_df.sample(
+            frac=frac, random_state=random_state, replace=False)
+        y_train: pd.DataFrame = targets_df.sample(frac=frac, random_state=random_state)
+
+        frac = .25
+        X_test: pd.DataFrame = features_df.sample(
+            frac=frac, random_state=random_state, replace=False)
+        y_test: pd.DataFrame = targets_df.sample(frac=frac, random_state=random_state)
+        if as_numpy:
+            return tuple_to_numpy((X_train, y_train, X_test, y_test))
+        else:
+            return X_train, y_train, X_test, y_test
 
 
 def cross_validation_of(Algorithm, X: np.ndarray, y: np.ndarray, V: int = 10) -> float:
