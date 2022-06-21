@@ -1,8 +1,9 @@
+from sklearn.preprocessing import StandardScaler
 from utils import load_data
 import numpy as np
 import pandas as pd
 import IPython
-from typing import List
+from typing import List, Optional
 from sklearn.metrics import mean_squared_error
 
 def ldf_display(df, nlines=500):
@@ -142,7 +143,7 @@ def get_train_data(
         targets_columns: list[str],
         random_state: np.random.RandomState = None,
         validation=True,
-        as_numpy=True
+        as_numpy=True,
 ):
     features_df = dataset.drop(columns=targets_columns, inplace=False)
     targets_df = dataset[targets_columns]
@@ -188,6 +189,37 @@ def get_train_data(
             return tuple_to_numpy((X_train, y_train, X_test, y_test))
         else:
             return X_train, y_train, X_test, y_test
+
+
+def scale_data(X_train: pd.DataFrame, y_train: pd.DataFrame, X_test: pd.DataFrame, y_test: pd.DataFrame, X_val: pd.DataFrame=None, y_val: pd.DataFrame=None):
+    if X_val is not None and y_val is not None:
+        val_f_scaler = StandardScaler()
+        val_t_scaler = StandardScaler()
+        test_f_scaler = StandardScaler()
+        test_t_scaler = StandardScaler()
+
+        X_train_val = pd.concat([X_train, X_val])
+        y_train_val = pd.concat([y_train, y_val])
+
+        X_train = val_f_scaler.fit_transform(X_train)
+        y_train = val_t_scaler.fit_transform(y_train)
+        X_val = val_f_scaler.transform(X_val)
+        y_val = val_t_scaler.transform(y_val)
+
+        X_train_val = test_f_scaler.fit_transform(X_train_val)
+        y_train_val = test_t_scaler.fit_transform(y_train_val)
+        X_test = test_f_scaler.transform(X_test)
+        y_test = test_t_scaler.transform(y_test)
+
+        return ((val_f_scaler, val_t_scaler), (test_f_scaler, test_t_scaler)), (X_train, y_train, X_val, y_val, X_train_val, y_train_val, X_test, y_test)
+    else:
+        f_scaler = StandardScaler()
+        t_scaler = StandardScaler()
+        X_train = f_scaler.fit_transform(X_train)
+        y_train = t_scaler.fit_transform(y_train)
+        X_test = f_scaler.transform(X_test)
+        y_test = t_scaler.transform(y_test)
+        return (f_scaler, t_scaler), (X_train, y_train, X_test, y_test)
 
 
 def cross_validation_of(Algorithm, X: np.ndarray, y: np.ndarray, V: int = 10) -> float:
