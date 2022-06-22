@@ -96,8 +96,8 @@ def normalize_ndarray(X: np.ndarray, continuous_columns: List[int]):
 
 def return_required_data(
         dataset: pd.DataFrame,
-        targets: list[str],
-        continuous_columns: list[str] = None,
+        targets: List[str],
+        continuous_columns: List[str] = None,
         normalize=True,
         normalize_targets=True,
         validation=True,
@@ -141,7 +141,7 @@ def return_required_data(
 
 def get_train_data(
         dataset: pd.DataFrame,
-        targets_columns: list[str] = ['Energy_(kcal/mol)', 'Energy DG:kcal/mol)'],
+        targets_columns: List[str] = ['Energy_(kcal/mol)', 'Energy DG:kcal/mol)'],
         random_state: np.random.RandomState = None,
         validation=True,
         as_numpy=True,
