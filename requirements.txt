@@ -4,3 +4,6 @@ pandas
 matplotlib
 scikit-learn
 ipython
+tensorflow
+tensorflow-addons
+tensorflow-docs @ git+https://github.com/tensorflow/docs
