@@ -5,19 +5,19 @@ from optuna.trial import Trial
 
 import pandas as pd
 import numpy as np
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_error, r2_score
 from processing_utils import prune_dataset_lines, encode_smiles_column_of, return_required_data
-from RBF import RBF
+from rbf import RBF
 
 
-def objective(trial: Trial, data: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]):
-    X_train, y_train, X_validation, y_validation = data
+def objective(trial: Trial, X_train, y_train, X_validation, y_validation, normalize=True, metric=r2_score):
     n_clusters = trial.suggest_int("n_clusters", 10, 250)
     sigma = trial.suggest_float("sigma", 0.01, 10)
-    rbf = RBF(n_clusters, sigma).fit(X_train, y_train)
+
+    rbf = RBF(n_clusters, sigma, normalize).fit(X_train, y_train)
     y_pred = rbf.predict(X_validation)
-    mse = mean_squared_error(y_validation, y_pred)
-    return mse
+
+    return metric(y_validation, y_pred)
 
 
 if __name__ == "__main__":

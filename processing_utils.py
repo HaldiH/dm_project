@@ -1,3 +1,4 @@
+from scipy import rand
 from sklearn.preprocessing import StandardScaler
 from utils import load_data
 import numpy as np
@@ -140,57 +141,27 @@ def return_required_data(
 
 def get_train_data(
         dataset: pd.DataFrame,
-        targets_columns: list[str],
+        targets_columns: list[str] = ['Energy_(kcal/mol)', 'Energy DG:kcal/mol)'],
         random_state: np.random.RandomState = None,
         validation=True,
         as_numpy=True,
 ):
-    """This function returns pandas DataFrames"""
-    features_df = dataset.drop(columns=targets_columns, inplace=False)
-    targets_df = dataset[targets_columns]
+    dataset = dataset.sample(frac=1, random_state=random_state)
+    features_df: pd.DataFrame = dataset.drop(columns=targets_columns, inplace=False)
+    targets_df: pd.DataFrame = dataset[targets_columns]
+    n_rows = features_df.shape[0]
 
-    if random_state is None:
-        random_state = np.random.RandomState()
+    # take 50%, 25%, 25% for validation data
+    # else take 75%, 25%
+    split_indices = (np.array([.5, .75] if validation else [.75]) * n_rows).astype(int)
 
-    def tuple_to_numpy(t: tuple):
-        res = ()
-        for e in t:
-            res += (np.asarray(e),)
-        return res
+    X_data: List[pd.DataFrame] = np.split(features_df, split_indices)
+    y_data: List[pd.DataFrame] = np.split(targets_df, split_indices)
 
-    if validation:
-        frac = .5
-        X_train: pd.DataFrame = features_df.sample(
-            frac=frac, random_state=random_state, replace=False)
-        y_train: pd.DataFrame = targets_df.sample(frac=frac, random_state=random_state)
-
-        frac=.25
-        X_val: pd.DataFrame = features_df.sample(
-            frac=frac, random_state=random_state, replace=False)
-        y_val: pd.DataFrame = targets_df.sample(frac=frac, random_state=random_state)
-
-        frac=.25
-        X_test: pd.DataFrame = features_df.sample(
-            frac=frac, random_state=random_state, replace=False)
-        y_test: pd.DataFrame = targets_df.sample(frac=frac, random_state=random_state)
-        if as_numpy:
-            return tuple_to_numpy((X_train, y_train, X_val, y_val, X_test, y_test))
-        else:
-            return X_train, y_train, X_val, y_val, X_test, y_test
-    else:
-        frac = .75
-        
-        rows = np.random.binomial(1, frac, size=features_df.shape[0]).astype(bool)
-        X_train = features_df[rows]
-        y_train = targets_df[rows]
-
-        X_test = features_df[~rows]
-        y_test = targets_df[~rows]
-        
-        if as_numpy:
-            return tuple_to_numpy((X_train, y_train, X_test, y_test))
-        else:
-            return X_train, y_train, X_test, y_test
+    t = ()
+    for X, y in zip(X_data, y_data):
+        t += (X.to_numpy(), y.to_numpy()) if as_numpy else (X, y)
+    return t
 
 
 def scale_data(X_train: pd.DataFrame, y_train: pd.DataFrame, X_test: pd.DataFrame, y_test: pd.DataFrame, X_val: pd.DataFrame=None, y_val: pd.DataFrame=None):
